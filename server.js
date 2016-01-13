@@ -25,10 +25,12 @@ function getNextSequence(db) {
   }); 
 }
 
-function insertData(urlReq) {
-  console.log('wawa');
+function insertData(urlReq,res,original) {
+  console.log('wawa',res);
   MongoClient.connect(url,function(err,db) {
+    var str = [];
     var currI;
+    var jsonStr = "";
     var collection = db.collection('url3');
     var counter = db.collection('counter');
     counter.update( 
@@ -37,7 +39,6 @@ function insertData(urlReq) {
         $inc:{"count":1}
       }, function(err,result) {
       console.log('well',result);
-      return result;
     });
 
     counter.find({"name":"counter"}).toArray(function(err,result) {
@@ -50,17 +51,21 @@ function insertData(urlReq) {
         _id: currI 
       }, function(err,result) {
         if (err) throw err;
-        console.log('inserteddata',result);
-    }); 
+        console.log('inserteddata',result,'ops',result.ops[0].url,result.ops[0]._id);
+        str.push(result.ops[0].url)
+        str.push(result.ops[0]._id)
+        db.close();
+        jsonStr += '{"url":"'+ str.shift() +'","short_url":"'+ original+'/'+str.pop() + '"}';
+        return res.send(JSON.parse(jsonStr));
+      }); 
     });
-  }); 
-
-
+  });
 } 
 
 app.get('/*',function(req,res) {
   var urlReq = req.params[0];
-  console.log(urlReq,req.params[0]);
+  var original = req.hostname;
+  console.log(urlReq,req.params[0],req.hostname,'host');
   var response;
   if (validUrl(urlReq)) {
     //now add the check for index
@@ -70,10 +75,9 @@ app.get('/*',function(req,res) {
             
     } else { 
     //url does not exist in d.b, so insert url into d.b with _id 
-      response = insertData(urlReq);
+      insertData(urlReq,res,original);
     }
   } //end of url being valid condition
-res.send('ok');
 });
 
 
