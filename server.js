@@ -13,17 +13,29 @@ function validUrl(url) {
 function checkID(url) {
   var ind = url.lastIndexOf("/");
   var currInd = url.slice(ind+1,url.length);
-
-  return (Number(currInd)) ? currInd : null ;
+  console.log(ind,url,'checkurl',currInd);
+  return (Number(currInd)) ? Number(currInd) : null ;
+}
+function retrieveUrl(id,res) {
+  console.log('did i ever happen');
+  MongoClient.connect(url,function(err,db) {
+    var collection = db.collection('url3');
+    collection.find({_id:id}).toArray( function(err,response) {
+      console.log('well,how about me?',response);
+      var toRedirect = response[0].url;
+      db.close(); 
+      return res.redirect(toRedirect);
+    });
+  });
 }
 
-function getNextSequence(db) {
+/*function getNextSequence(db) {
   db.update({$set:{count:1}},function(err,res) {
     if (err) throw err;
     console.log('ures',res);
     return res;
   }); 
-}
+}*/
 
 function insertData(urlReq,res,original) {
   console.log('wawa',res);
@@ -33,6 +45,7 @@ function insertData(urlReq,res,original) {
     var jsonStr = "";
     var collection = db.collection('url3');
     var counter = db.collection('counter');
+      
     counter.update( 
       {"name":"counter"},
       {
@@ -67,19 +80,18 @@ app.get('/*',function(req,res) {
   var original = req.hostname;
   console.log(urlReq,req.params[0],req.hostname,'host');
   var response;
-  if (validUrl(urlReq)) {
+ // if (validUrl(urlReq)) {
     //now add the check for index
     var id;
     id = checkID(urlReq)  //this checks if the current index is a number, if it is, this means url exists in d.b, d.b must be queryed w/ ind
     if (id !== null) {
-            
+      retrieveUrl(id,res);        
     } else { 
     //url does not exist in d.b, so insert url into d.b with _id 
       insertData(urlReq,res,original);
     }
-  } //end of url being valid condition
+ // } //end of url being valid condition
 });
-
 
 
 app.listen(3030);
