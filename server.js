@@ -3,6 +3,8 @@ var app = express();
 var MongoClient = require('mongodb').MongoClient;
 var assert = require('assert');
 var url = 'mongodb://localhost:27017/test';
+var path = require('path');
+var bodyparser = require('body-parser');
 
 function validUrl(url) {
   var reg = /^(https?|ftp):\/\/[a-z0-9-]+(\.[a-z0-9-]+)+([\/?].+)?([\/d+])?$/;
@@ -16,6 +18,7 @@ function checkID(url) {
   console.log(ind,url,'checkurl',currInd);
   return (Number(currInd)) ? Number(currInd) : null ;
 }
+
 function retrieveUrl(id,res) {
   console.log('did i ever happen');
   MongoClient.connect(url,function(err,db) {
@@ -28,14 +31,6 @@ function retrieveUrl(id,res) {
     });
   });
 }
-
-/*function getNextSequence(db) {
-  db.update({$set:{count:1}},function(err,res) {
-    if (err) throw err;
-    console.log('ures',res);
-    return res;
-  }); 
-}*/
 
 function insertData(urlReq,res,original) {
   console.log('wawa',res);
@@ -74,22 +69,35 @@ function insertData(urlReq,res,original) {
     });
   });
 } 
+app.use(bodyparser.urlencoded({extended:false}));
+
+app.use(express.static(path.join(__dirname,'templates')));
+
+app.post('/',function(req,res) {
+  var urlReq = req.body.data;
+  var original = req.hostname;
+  if (validUrl(urlReq)) {
+    insertData(urlReq,res,original);
+  }
+});
 
 app.get('/*',function(req,res) {
   var urlReq = req.params[0];
   var original = req.hostname;
   console.log(urlReq,req.params[0],req.hostname,'host');
   var response;
- // if (validUrl(urlReq)) {
+  //if (validUrl(urlReq)) {
     //now add the check for index
     var id;
     id = checkID(urlReq)  //this checks if the current index is a number, if it is, this means url exists in d.b, d.b must be queryed w/ ind
-    if (id !== null) {
-      retrieveUrl(id,res);        
-    } else { 
+    
+     if (id !== null) {
+      retrieveUrl(id,res);
+    }        
+    //else { 
     //url does not exist in d.b, so insert url into d.b with _id 
-      insertData(urlReq,res,original);
-    }
+    //  insertData(urlReq,res,original);
+  //  }
  // } //end of url being valid condition
 });
 
